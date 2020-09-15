@@ -40,12 +40,14 @@ long shim_do_rt_sigaction(int signum, const struct __kernel_sigaction* act,
     if (oldact && !is_user_memory_writable(oldact, sizeof(*oldact)))
         return -EFAULT;
 
+#if defined(__x86_64__)
     if (act && !(act->sa_flags & SA_RESTORER)) {
         /* XXX: This might not be true for all architectures (but is for x86_64)...
          * Check `shim_signal.c` if you update this! */
         log_warning("rt_sigaction: SA_RESTORER flag is required!");
         return -EINVAL;
     }
+#endif
 
     struct shim_thread* cur = get_cur_thread();
 
@@ -332,6 +334,12 @@ long shim_do_rt_sigpending(__sigset_t* set, size_t sigsetsize) {
 
     return 0;
 }
+
+#if defined(__powerpc64__)
+long shim_do_sigpending_old(__sigset_t* set) {
+    return shim_do_rt_sigpending(set, sizeof(*set));
+}
+#endif
 
 static int _wakeup_one_thread(struct shim_thread* thread, void* arg) {
     int sig = (int)(long)arg;

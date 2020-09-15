@@ -89,6 +89,7 @@
 /shared_object
 /sigaction_per_process
 /sigaltstack
+/sighandler_contextswitch
 /sighandler_divbyzero
 /sighandler_reset
 /sighandler_sigpipe

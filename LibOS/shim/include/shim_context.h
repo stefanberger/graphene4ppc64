@@ -11,4 +11,6 @@ void shim_xstate_init(void);
 uint64_t shim_xstate_size(void);
 void shim_xstate_restore(const void* xstate_extended);
 
+noreturn void return_with_context(PAL_CONTEXT* context);
+
 #endif /* _SHIM_CONTEXT_H_ */

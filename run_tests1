@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+
+ERROR=0 \
+    && pushd Examples/bash &>/dev/null \
+    &&   TEST="bash"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   make &>/dev/null && make regression || { ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && pushd Examples/curl &>/dev/null \
+    &&   TEST="curl"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   make &>/dev/null && make check || { ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && pushd Examples/nodejs &>/dev/null \
+    &&   TEST="nodejs"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   if [ -n "${INSTALL_DEPS}" ]; then sudo apt-get -y install nodejs &>/dev/null; fi \
+    &&   make &>/dev/null && make check || { ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && pushd Examples/nodejs-express-server &>/dev/null \
+    &&   TEST="nodejs-express-server"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   if [ -n "${INSTALL_DEPS}" ]; then sudo apt-get -y install npm node-gyp nodejs-dev libssl1.0-dev &>/dev/null; fi \
+    &&   npm install express \
+    &&   make &>/dev/null && make check || { ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && pushd Examples/python &>/dev/null \
+    &&   TEST="python"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   if [ -n "${INSTALL_DEPS}" ]; then sudo apt-get -y install python3.6 python3-scipy &>/dev/null; fi \
+    &&   make &>/dev/null && make check || { ./run-tests.sh ;ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && pushd Examples/gcc &>/dev/null \
+    &&   TEST="gcc"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   make &>/dev/null && make check || { ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && exit $ERROR

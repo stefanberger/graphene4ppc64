@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+
+ERROR=0 \
+    && pushd Pal/regression &>/dev/null \
+    &&   TEST="Pal regresssion"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   make regression || { ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && pushd LibOS/shim/test/fs &>/dev/null \
+    &&   TEST="shim fs test"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   make test || { ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && pushd LibOS/shim/test/regression &>/dev/null \
+    &&   TEST="shim regression"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS" \
+    &&   make regression || { ERROR=1; RESULT="FAIL"; } \
+    &&   echo ">>>>>> ${TEST}: $RESULT <<<<<" \
+    && popd &>/dev/null \
+    && exit $ERROR

@@ -47,6 +47,11 @@ fs.mount.lib3.type = "chroot"
 fs.mount.lib3.path = "/usr/{{ arch_libdir }}"
 fs.mount.lib3.uri = "file:/usr/{{ arch_libdir }}"
 
+# Mount /bin
+fs.mount.bin.type = "chroot"
+fs.mount.bin.path = "/usr/bin"
+fs.mount.bin.uri = "file:/usr/bin"
+
 # Set enclave size to 2GB. Recall that SGX v1 requires to specify enclave size at enclave creation
 # time.
 sgx.enclave_size = "2G"

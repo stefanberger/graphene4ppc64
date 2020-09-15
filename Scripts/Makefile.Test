@@ -17,12 +17,14 @@ include $(SCRIPTS_DIR)/Makefile.rules
 
 CFLAGS-libos = -I$(SHIMDIR)/include -L$(SHIMDIR)/../glibc-build/libos
 
-CFLAGS-libos-debug = -I$(SHIMDIR)/include -I$(PALDIR)/../include/pal -I$(PALDIR)/../include/lib -fno-builtin -nostdlib
+CFLAGS-libos-debug = -I$(SHIMDIR)/include -I$(PALDIR)/../include/pal \
+	-I$(PALDIR)/../include/lib -fno-builtin -nostdlib \
+	-I$(PALDIR)/../include/arch/$(ARCH)
 CXXFLAGS-libos-debug = -I$(SHIMDIR)/include -I$(PALDIR)/../include/pal -I$(PALDIR)/../include/lib -fno-builtin -nostdlib
 LDFLAGS-libos-debug = -L$(SHIMDIR)/src -L$(PALDIR)/host/$(PAL_HOST) -Wl,-rpath-link=$(abspath $(RUNTIME)) -lpal -lsysdb_debug
 
 .PHONY: all
-ifeq ($(findstring x86_64,$(SYS))$(findstring linux,$(SYS)),x86_64linux)
+ifeq ($(ARCH), $(filter $(ARCH),x86_64 ppc64))
 all: $(exec_target) | $(all_manifests) $(call expand_target_to_sgx,$(all_manifests)) $(call expand_target_to_sig,$(all_manifests))
 else
 all:

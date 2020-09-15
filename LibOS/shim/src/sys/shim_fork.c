@@ -11,9 +11,17 @@
 #include "shim_table.h"
 
 long shim_do_fork(void) {
+#if defined(__i386__) || defined(__x86_64__)
     return shim_do_clone(SIGCHLD, 0, NULL, NULL, 0);
+#elif defined(__powerpc64__)
+    return shim_do_clone(SIGCHLD, 0, NULL, 0, NULL);
+#endif
 }
 
 long shim_do_vfork(void) {
+#if defined(__i386__) || defined(__x86_64__)
     return shim_do_clone(CLONE_VFORK | CLONE_VM | SIGCHLD, 0, NULL, NULL, 0);
+#elif defined(__powerpc64__)
+    return shim_do_clone(CLONE_VFORK | CLONE_VM | SIGCHLD, 0, NULL, 0, NULL);
+#endif
 }

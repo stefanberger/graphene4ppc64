@@ -26,6 +26,8 @@ static struct new_utsname g_current_uname = {
     .version  = "1",
 #ifdef __x86_64__
     .machine  = "x86_64",
+#elif defined(__powerpc64__)
+    .machine  = "ppc64le",
 #else
 #error "Not implemented"
 #endif

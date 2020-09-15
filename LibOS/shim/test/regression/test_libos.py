@@ -10,6 +10,8 @@ import unittest
 from regression import (
     HAS_SGX,
     ON_X86,
+    ON_PPC,
+    ON_TRAVIS,
     RegressionTestCase,
 )
 
@@ -574,6 +576,11 @@ class TC_30_Syscall(RegressionTestCase):
         stdout, _ = self.run_binary(['kill_all'])
         self.assertIn('TEST OK', stdout)
 
+    @unittest.skipUnless(ON_PPC, "ppc64-specific")
+    def test_096_sighandler_contextswitch(self):
+        stdout, _ = self.run_binary(['sighandler_contextswitch'])
+        self.assertIn('TEST OK', stdout)
+
     def test_100_get_set_groups(self):
         stdout, _ = self.run_binary(['groups'])
         self.assertIn('child OK', stdout)
@@ -698,6 +705,7 @@ class TC_40_FileSystem(RegressionTestCase):
         self.assertGreater(n, 0, "no information about CPU cache found")
         return n
 
+    @unittest.skipIf((ON_TRAVIS & ON_PPC) | ON_PPC, "necessary files not available on Travis")
     def test_040_sysfs(self):
         num_cpus = os.cpu_count()
         num_cache_levels = self.get_num_cache_levels()
@@ -742,6 +750,7 @@ class TC_40_FileSystem(RegressionTestCase):
             self.assertIn(f'{node}/hugepages/hugepages-1048576kB/nr_hugepages: file', lines)
 
 
+@unittest.skipIf(ON_PPC, "not supported on PowerPC64")
 class TC_50_GDB(RegressionTestCase):
     def setUp(self):
         if not self.has_debug():
@@ -883,7 +892,7 @@ class TC_80_Socket(RegressionTestCase):
         self.assertIn('[parent] TEST OK', stdout)
 
     def test_100_socket_unix(self):
-        stdout, _ = self.run_binary(['unix'])
+        stdout, _ = self.run_binary(['unix'], timeout=20)
         self.assertIn('Data: This is packet 0', stdout)
         self.assertIn('Data: This is packet 1', stdout)
         self.assertIn('Data: This is packet 2', stdout)

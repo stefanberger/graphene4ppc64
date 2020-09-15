@@ -717,7 +717,9 @@ bool handle_signal(PAL_CONTEXT* context, __sigset_t* old_mask_ptr) {
     }
     if (handler != SIG_IGN) {
         /* User provided handler. */
+#if defined(__x86_64__)
         assert(sa->sa_flags & SA_RESTORER);
+#endif
 
         long sysnr = shim_get_tcb()->context.syscall_nr;
         if (sysnr >= 0) {

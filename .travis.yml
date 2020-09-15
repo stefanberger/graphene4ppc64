@@ -7,27 +7,34 @@ addons:
         - meson
         - ninja-build
         - python3-pip
-        - python3-pytest
+        - python3.6
+        - npm
+        - node-gyp
+        - nodejs-dev
+        - libssl1.0-dev
+        - python3-click
+        - python3-jinja2
+        - python3-numpy
+        - python3-scipy
+        - python3-setuptools
+        - python3-lxml
 script:
   - make -j$(nproc)
     && meson build -Ddirect=enabled
     && ninja -C build
     && sudo ninja -C build install
-    && export PYTHONPATH=${PWD}/python
-    && ERROR=0
-    && pushd Pal/test &>/dev/null
-    &&  make test || ERROR=1
-    && popd &>/dev/null
-    && pushd Pal/regression &>/dev/null
-    &&  make regression || ERROR=1
-    && popd &>/dev/null
-    && [ $ERROR -eq 0 ] || false
+    && sudo pip3 install pytest
+    && export INSTALL_DEPS=1
+    && ./run_tests0
+    && ./run_tests1
+    && ./run_tests2
 
 matrix:
   include:
-    - name: Build and test on x86_64
-      os: linux
-      arch: amd64
     - name: Build and test on ppc64
       os: linux
       arch: ppc64le
+      dist: bionic
+      env: PYTHONVERSION=python3.6
+      before_script:
+        - sed -i 's/GLIBC_VERSION ?= .*/GLIBC_VERSION ?= 2.31/' LibOS/Makefile

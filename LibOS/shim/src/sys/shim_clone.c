@@ -100,7 +100,7 @@ static int clone_implementation_wrapper(struct shim_clone_args* arg) {
 
     put_thread(my_thread);
 
-    restore_child_context_after_clone(&tcb->context);
+    restore_child_context_after_clone(&tcb->context, /*is_process=*/false);
 }
 
 static BEGIN_MIGRATION_DEF(fork, struct shim_process* process_description,
@@ -115,7 +115,9 @@ static BEGIN_MIGRATION_DEF(fork, struct shim_process* process_description,
     DEFINE_MIGRATE(brk, NULL, 0);
     DEFINE_MIGRATE(loaded_libraries, NULL, 0);
 #ifdef DEBUG
+#if !defined(__powerpc64__)
     DEFINE_MIGRATE(gdb_map, NULL, 0);
+#endif
 #endif
 }
 END_MIGRATION_DEF(fork)
@@ -222,8 +224,14 @@ static long do_clone_new_vm(unsigned long flags, struct shim_thread* thread, uns
     return ret;
 }
 
+#if defined(__i386__) || defined(__x86_64__)
 long shim_do_clone(unsigned long flags, unsigned long user_stack_addr, int* parent_tidptr,
                   int* child_tidptr, unsigned long tls) {
+#elif defined(__powerpc64__)
+/* tls already contains the TLS_TCB_OFFSET */
+long shim_do_clone (unsigned long flags, unsigned long user_stack_addr, int* parent_tidptr,
+                    unsigned long tls, int* child_tidptr) {
+#endif
     /*
      * Currently not supported:
      * CLONE_PARENT

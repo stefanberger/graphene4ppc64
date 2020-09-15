@@ -8,7 +8,11 @@
 #ifndef _SHIM_FS_H_
 #define _SHIM_FS_H_
 
+#if !defined(__powerpc64__)
 #include <asm/stat.h>
+#else
+#include "stat.h"
+#endif
 #include <stdbool.h>
 #include <stdint.h>
 

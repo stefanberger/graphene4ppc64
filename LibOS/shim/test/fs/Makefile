@@ -38,7 +38,7 @@ include ../../../../Scripts/Makefile.configs
 include ../../../../Scripts/manifest.mk
 include ../../../../Scripts/Makefile.Test
 
-ifeq ($(findstring x86_64,$(SYS))$(findstring linux,$(SYS)),x86_64linux)
+ifeq ($(ARCH),$(filter $(ARCH),x86_64 ppc64))
 
 $(execs): common.o
 

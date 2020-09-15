@@ -238,6 +238,50 @@ out:
     return ret;
 }
 
+#if defined(__powerpc64__)
+/* lseek is simply doing arithmetic on the offset, no PAL call here */
+long shim_do__llseek(int fd, unsigned long offset_high, unsigned long offset_low,
+                     unsigned long resultaddr, int origin) {
+    if (resultaddr && !is_user_memory_writable((void *)resultaddr, sizeof(loff_t *)))
+        return -EFAULT;
+
+    if (origin != SEEK_SET && origin != SEEK_CUR && origin != SEEK_END)
+        return -EINVAL;
+
+    struct shim_handle *hdl = get_fd_handle(fd, NULL, NULL);
+    if (!hdl)
+        return -EBADF;
+
+    off_t offset = offset_high << 32 | offset_low;
+
+    off_t ret = 0;
+    if (hdl->is_dir) {
+        ret = do_lseek_dir(hdl, offset, origin);
+        goto out;
+    }
+
+    struct shim_fs *fs = hdl->fs;
+    assert(fs && fs->fs_ops);
+
+    if (!fs->fs_ops->seek) {
+        ret = -ESPIPE;
+        goto out;
+    }
+
+    ret = fs->fs_ops->seek(hdl, offset, origin);
+out:
+    put_handle(hdl);
+    if (resultaddr)
+        *(loff_t *)resultaddr = ret;
+
+    /* if it's an error code, return the error code */
+    if (ret < 0 && ret > -255)
+        return ret;
+
+    return 0;
+}
+#endif
+
 long shim_do_pread64(int fd, char* buf, size_t count, loff_t pos) {
     if (!is_user_memory_writable(buf, count))
         return -EFAULT;

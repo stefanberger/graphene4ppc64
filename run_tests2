@@ -1,0 +1,135 @@
+#!/usr/bin/env bash
+
+ERROR=0
+
+# skip on Travis; cannot download
+case "$(uname -p)${TRAVIS_CPU_ARCH}" in
+x86_64)
+	# python libraries do not compile on ppc64 with python3.6
+	pushd Examples/pytorch &>/dev/null
+	TEST="pytorch"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS"
+	if [ -n "${INSTALL_DEPS}" ]; then
+		sudo apt-get -y install python3-pip lsb-release &>/dev/null
+		sudo pip3 install torchvision pillow
+		pip3 --user install torchvision pillow
+		python3 -c 'import torchvision ; torchvision.models.alexnet(pretrained=True)'
+	fi
+	make pal_loader pytorch.manifest
+	graphene-direct ./pytorch ./pytorchexample.py || { ERROR=1; RESULT="FAIL"; }
+	echo ">>>>> ${TEST}: $RESULT <<<<<"
+	popd &>/dev/null
+	;;
+*)
+	;;
+esac
+
+if [ -n "${GRAPHENE_TEST_EXPENSIVE}" ]; then
+	pushd Examples/busybox &>/dev/null
+	TEST="busybox"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS"
+	make -j$(nproc) all
+	res=$(graphene-direct busybox sh -c 'echo -en | sha256sum | cut -d" " -f1')
+	exp="e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	if [ "$res" != "$exp" ]; then
+		echo "Error: Unexpected result: $res"
+		echo "Error: Expected         : $exp"
+		ERROR=1
+		RESULT="FAIL"
+	fi
+	echo ">>>>> ${TEST}: $RESULT <<<<<"
+	popd &>/dev/null
+fi
+
+if [ -n "${GRAPHENE_TEST_EXPENSIVE}" ]; then
+	case "$(uname -p)" in
+	x86_64|ppc64le)
+		pushd Examples/nginx &>/dev/null
+		TEST="nginx"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS"
+		if [ -n "${INSTALL_DEPS}" ]; then sudo apt-get -y install apache2-utils &>/dev/null; fi
+		make
+		make -j$(nproc)
+		# turn off ssl and inclusion of mime.types
+		sed -in 's/^\s*include\s*mime.types/#\0/p' install/conf/nginx-graphene.conf
+		sed -in 's/^\s*listen\s*8444/#\0/p' install/conf/nginx-graphene.conf
+		sed -in 's/^\s*ssl_\s*/#\0/' install/conf/nginx-graphene.conf
+		bash -c "graphene-direct ./nginx -c conf/nginx-graphene.conf" & PID=$!
+		sleep 3
+		../common_tools/benchmark-http.sh 127.0.0.1:8002 || { ERROR=1; RESULT="FAIL"; }
+		# kill bash and nginx processes
+		kill -SIGKILL $(ps --ppid $PID -o pid=) $PID
+		echo ">>>>> ${TEST}: $RESULT <<<<<"
+		popd &>/dev/null
+		;;
+	esac
+fi
+
+#pushd Examples/lighttpd &>/dev/null
+#TEST="lighttpd"; echo ">>>>> $TEST <<<<<"; RESULT="PASS"
+## Compensate for download issues...
+#for ((i = 0; i < 3; i++)); do
+#	make -j$(nproc)
+#	[ $? -eq  0 ] && break
+#done
+#bash -c "./pal_loader lighttpd -D -m install/lib -f lighttpd.conf" & PID=$!
+#sleep 1
+#wget http://127.0.0.1:8003/random/10K.1.html || { ERROR=1; RESULT="FAIL"; }
+#rm -rf 10K.1.html*
+#kill -SIGKILL $PID
+#echo ">>>>> ${TEST}: $RESULT <<<<<"
+#popd &>/dev/null
+
+#pushd Examples/redis &>/dev/null
+#TEST="redis"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS"
+#make -j$(nproc) MALLOC=libc
+#bash -c "./pal_loader redis-server --save '' --protected-mode no" & PID=$!
+#sleep 1
+#src/src/redis-benchmark || { ERROR=1; RESULT="FAIL"; }
+#kill -SIGKILL $PID
+#echo ">>>>> ${TEST}: $RESULT <<<<<"
+#popd &>/dev/null
+
+# LTP occasionally fails on Travis x86_64
+case "$(uname -p)" in
+ppc64le)
+	pushd LibOS/shim/test/ltp
+	git submodule update --init ./src
+	TEST="LTP"; echo ">>>>>> $TEST <<<<<<"; RESULT="PASS"
+	set -x
+	if [ -n "${INSTALL_DEPS}" ]; then
+		sudo apt-get -y install \
+			python3-lxml gcc git make \
+			pkgconf autoconf automake \
+			bison flex m4 \
+			linux-headers-$(uname -r) libc6-dev &>/dev/null;
+	fi
+	# Without 'env -i' it will NOT build (install) on Travis
+	env -i PWD=$PWD PATH=$PATH PYTHONPATH=$PYTHONPATH make 2>&1 | tee -a make.log | \
+		gawk '{ if (NR % 250 == 0) { print "Building ..." } }'
+	if [ $? -ne  0 ]; then
+		echo "==========================================" >> make.log
+		env -i PWD=$PWD PATH=$PATH make 2>&1 | tee -a make.log | \
+			gawk '{ if (NR % 250 == 0) { print "Building ..." } }'
+	fi
+	set -o pipefail
+	env -i LANG=C.UTF-8 LC_ALL=C.UTF-8 PWD=$PWD PATH=$PATH PYTHONPATH=$PYTHONPATH make ltp.xml 2>&1 | tee -a make.log
+	if [ $? -ne 0 ]; then
+		env -i PWD=$PWD PATH=$PATH make ltp.xml 2>&1 | tee -a make.log
+		if [ $? -ne 0 ]; then
+			ERROR=1
+			RESULT="FAIL"
+			cat make.log
+		fi
+	fi
+	set +o pipefail
+	set +x
+	echo ">>>>> ${TEST}: $RESULT <<<<<"
+	popd &>/dev/null
+	;;
+esac
+
+if [ $ERROR -eq 0 ]; then
+	echo "OVERALL: PASS"
+else
+	echo "OVERALL: FAIL"
+fi
+
+exit $ERROR

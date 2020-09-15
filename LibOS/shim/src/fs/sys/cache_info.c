@@ -40,8 +40,10 @@ int sys_cache_load(struct shim_dentry* dent, char** out_data, size_t* out_size) 
         str = cache->coherency_line_size;
     } else if (strcmp(name, "number_of_sets") == 0) {
         str = cache->number_of_sets;
+#if !defined(__powerpc64__)
     } else if (strcmp(name, "physical_line_partition") == 0) {
         str = cache->physical_line_partition;
+#endif
     } else {
         log_debug("unrecognized file: %s", name);
         return -ENOENT;

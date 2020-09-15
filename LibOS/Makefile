@@ -19,7 +19,8 @@ GNU_MIRRORS ?= https://ftp.gnu.org/gnu/ \
 #
 # Override CC, CXX, AS in case we're compiling the rest of the project with clang.
 # ------------------------------------------------------------------------------------------------
-GLIBC_VERSION ?= 2.33
+# due to Travis and Bionic, still use 2.31
+GLIBC_VERSION ?= 2.31
 GLIBC_SRC = glibc-$(GLIBC_VERSION)
 GLIBC_HASH = $(firstword $(shell grep $(GLIBC_SRC).tar.gz glibc-checksums))
 SHIM_DIR = shim
@@ -47,6 +48,9 @@ GLIBC_LIBS = \
 ifeq ($(ARCH),x86_64)
 GLIBC_LIBS += elf/ld-linux-x86-64.so.2
 endif
+ifeq ($(ARCH),ppc64)
+GLIBC_LIBS += elf/ld64.so.2
+endif
 
 GLIBC_TARGET = $(addprefix $(BUILD_DIR)/, $(GLIBC_LIBS))
 GLIBC_RUNTIME = $(addprefix $(RUNTIME_DIR)/, $(notdir $(GLIBC_TARGET)))
@@ -66,7 +70,7 @@ GLIBC_DEPS = shim/include/arch/$(ARCH)/shim_entry_api.h
 all: $(GLIBC_TARGET) $(GLIBC_RUNTIME)
 	$(MAKE) -C $(SHIM_DIR) all
 
-ifeq ($(findstring x86_64,$(SYS))$(findstring linux,$(SYS)),x86_64linux)
+ifeq ($(ARCH),$(filter $(ARCH),x86_64 ppc64))
 
 .SECONDARY: $(BUILD_DIR)/Build.success
 
@@ -92,7 +96,8 @@ $(BUILD_DIR)/Makefile: $(GLIBC_SRC)/.configured
 $(foreach lib,$(GLIBC_TARGET),$(eval $(call LN_SF_TO_RUNTIME_DIR_template,$(lib))))
 
 GLIBC_PATCHES = \
-	glibc-patches/$(GLIBC_SRC).patch
+	glibc-patches/$(GLIBC_SRC).patch \
+	glibc-patches/$(GLIBC_SRC)-ppc64.patch
 
 GLIBC_PATCHES_2.31 = \
 	glibc-patches/hp-timing-2.31.patch

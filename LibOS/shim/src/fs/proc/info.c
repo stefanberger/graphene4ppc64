@@ -114,6 +114,7 @@ int proc_cpuinfo_load(struct shim_dentry* dent, char** out_data, size_t* out_siz
     } while (0)
 
     for (size_t n = 0; n < g_pal_control->cpu_info.online_logical_cores; n++) {
+#if defined(__i386__) || defined(__x86_64__)
         /* Below strings must match exactly the strings retrieved from /proc/cpuinfo
          * (see Linux's arch/x86/kernel/cpu/proc.c) */
         ADD_INFO("processor\t: %lu\n", n);
@@ -129,8 +130,24 @@ int proc_cpuinfo_load(struct shim_dentry* dent, char** out_data, size_t* out_siz
         // Apparently graphene snprintf cannot into floats.
         ADD_INFO("bogomips\t: %lu.%02lu\n", (unsigned long)bogomips,
                  (unsigned long)(bogomips * 100.0 + 0.5) % 100);
+#elif defined(__powerpc64__)
+        ADD_INFO("processor\t: %lu\n", n);
+        ADD_INFO("cpu\t\t: %s\n", g_pal_control->cpu_info.cpu);
+        ADD_INFO("clock\t\t: %s\n", g_pal_control->cpu_info.clock);
+        ADD_INFO("revision\t: %s\n", g_pal_control->cpu_info.revision);
+#endif
         ADD_INFO("\n");
     }
+
+#if defined(__powerpc64__)
+    ADD_INFO("timebase\t: %s\n", g_pal_control->cpu_info.timebase);
+    ADD_INFO("platform\t: %s\n", g_pal_control->cpu_info.platform);
+    ADD_INFO("model\t\t: %s\n", g_pal_control->cpu_info.model);
+    ADD_INFO("machine\t\t: %s\n", g_pal_control->cpu_info.machine);
+    ADD_INFO("firmware\t: %s\n", g_pal_control->cpu_info.firmware);
+    ADD_INFO("MMU\t\t: %s\n", g_pal_control->cpu_info.mmu);
+#endif
+
 #undef ADD_INFO
 
     *out_data = str;

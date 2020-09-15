@@ -281,3 +281,8 @@ long shim_do_wait4(pid_t pid, int* status, int options, struct __kernel_rusage* 
     }
     return info.si_pid;
 }
+#if defined(__powerpc64__)
+long shim_do_waitpid(pid_t pid, int* status, int option) {
+    return shim_do_wait4(pid, status, option, NULL);
+}
+#endif
