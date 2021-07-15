@@ -7,8 +7,8 @@
 #define SHIM_ENTRY_API_H_
 
 /* Offsets of shim_tcb entry vectors relative to pal_tcb */
-#define SHIM_SYSCALLDB_OFFSET         32
-#define SHIM_REGISTER_LIBRARY_OFFSET  40
+#define SHIM_SYSCALLDB_OFFSET         24
+#define SHIM_REGISTER_LIBRARY_OFFSET  32
 
 /* offset of LIBOS_PTR from tcbhead_t's end */
 #define TCBHEAD_LIBOS_PTR_FROM_END_OFFSET (14 * 8)
